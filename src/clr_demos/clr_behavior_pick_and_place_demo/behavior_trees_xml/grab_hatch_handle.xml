@@ -1,0 +1,250 @@
+<root BTCPP_format="4"
+    main_tree_to_execute="GrabHatchHandle">
+
+    <BehaviorTree ID="GrabHatchHandle">
+        <Sequence>
+           
+            <!-- <SubTree ID="TraverseRight"/> -->
+
+            <SubTree ID="ApproachHatchHandle"/>
+
+            <SubTree ID="DetectHatchHandle"/>
+
+            <SubTree ID="GraspHatchHandle"/>
+
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="TraverseRight">
+        <Sequence>  
+                
+            <PlanToJointState
+                name="Plan to joint state"
+                service_name="/plan_kinematic_path"
+                group_name="rail"
+                joint_names="vention_rail_base_to_carriage"
+                joint_positions="1.750"
+                tolerance="0.0001"
+                trajectory="{gripper_traj}"/>
+
+            <ExecuteTrajectory
+                name="traversing"
+                trajectory="{gripper_traj}"
+                action_name="/execute_trajectory"/>
+
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="ApproachHatchHandle">
+        <Sequence>  
+            <CreateRandomTransform
+                name="Create approach hatch handle transform"
+                transform_name="approach_hatch_handle_transform"
+                center="1.4991;-0.558316;1.3595"
+                box_side="0.0;0.0;0.0"
+                transform="{transform}"/>
+
+            <ApplyTransform name="Rotate the transform"
+                input_transform="{transform}"
+                applied_transform_translation="0.0;0.0;0.0"
+                applied_transform_rotation="0.0;0.707;-0.0;0.707"
+                resulting_transform="{transform}"
+                />
+
+            <PublishTransform
+                name="publish transform"
+                input_transform="{transform}"
+                />
+
+            <SubTree ID="rrt_to_transform"
+                transform="{transform}"
+                group_name="clr"
+                end_effector_name="grasp_frame"
+                velocity_scaling="1.0"
+                acceleration_scaling="1.0"
+                />
+        </Sequence>
+    </BehaviorTree>
+
+
+    <BehaviorTree ID="DetectHatchHandle">
+        <Sequence>
+            <SubTree ID="OpenGripper"/>
+
+            <!--Gets color blob frame-->
+            <SubTree ID="GetColorBlobPose" blob_pose="{blob_pose}" />
+
+            <!-- GetColoBlobPose returns PoseStamped and we need TransformStamped -->
+            <PoseToTransform name="Blob pose to transform"
+                pose_stamped="{blob_pose}"
+                transform_stamped="{transform}"
+                />
+
+            <!-- MoveIt planning works **A LOT** better with world transform, this is a bit of a cheat -->
+            <PublishTransform
+                name="publish transform"
+                new_transform_name="found_blob_pose"
+                input_transform="{transform}"
+                />
+                
+            <!-- Look up the frame that the color blob actually publishes -->
+            <AsyncTfLookup name="Look up color blob"
+                base_frame="world"
+                target_frame="found_blob_pose"
+                tf="{transform}"
+                />
+
+                <!-- <AsyncTfLookup name="Look up hatch handle offset"
+                    base_frame="lorge/external_2_grab_touch"
+                    target_frame="hatch_handle_offset"
+                    tf="{transform}"
+                />
+
+                <ApplyTransform name="Rotate the transform"
+                    input_transform="{transform}"
+                    applied_transform_translation="0.0;0.0;0.0"
+                    applied_transform_rotation="0.707;-0.0;-0.707;0.0"
+                    resulting_transform="{transform}"
+                /> -->
+
+            <PublishTransform
+                name="publish transform"
+                input_transform="{transform}"
+                />
+
+            <SubTree ID="rrt_to_transform"
+                transform="{transform}"
+                group_name="clr"
+                end_effector_name="grasp_frame"
+                velocity_scaling="1.0"
+                acceleration_scaling="1.0"
+                />
+<!-- 
+            <CreateRandomTransform
+                name="Create descend hatch handle transform"
+                transform_name="descend_hatch_handle_transform"
+                center="1.6991;-0.55837;1.3595"
+                box_side="0.0;0.0;0.0"
+                transform="{transform}"/>
+
+            <ApplyTransform name="Rotate the transform"
+                input_transform="{transform}"
+                applied_transform_translation="0.0;0.0;0.0"
+                applied_transform_rotation="0.707;-0.0;-0.707;0.0"
+                resulting_transform="{transform}"
+                />
+
+            <PublishTransform
+                name="publish transform"
+                new_transform_name="descend_hatch_handle"
+                input_transform="{transform}"
+                />
+
+            <SubTree ID="rrt_to_transform"
+                transform="{transform}"
+                group_name="clr"
+                end_effector_name="grasp_frame"
+                velocity_scaling="1.0"
+                acceleration_scaling="1.0" -->
+                <!-- /> -->
+        </Sequence>
+    </BehaviorTree>
+
+
+    <BehaviorTree ID="GraspHatchHandle">
+        <Sequence>  
+            <AsyncTfLookup name="Look up grasp hatch handle (grasp_frame_2)"
+                    base_frame="lorge/external_2_grab_touch"
+                    target_frame="grasp_frame_2"
+                    tf="{goal_transform_stamped}"
+                    />
+
+            <ApplyTransform name="Rotate the transform"
+                input_transform="{goal_transform_stamped}"
+                applied_transform_translation="-0.01;0.0;0.0"
+                applied_transform_rotation="0.707;-0.0;-0.707;0.0"
+                resulting_transform="{goal_transform_stamped}"
+                />
+
+            <PublishTransform
+                name="publish transform"
+                input_transform="{goal_transform_stamped}"
+                />
+
+            <SubTree ID="rrt_to_transform"
+                transform="{goal_transform_stamped}"
+                group_name="clr"
+                end_effector_name="grasp_frame"
+                velocity_scaling="1.0"
+                acceleration_scaling="1.0"
+                />
+
+            <SubTree ID="CloseGripper"/>
+
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="OpenGripper">
+        <Sequence>
+            <!-- Make sure that the gripper is open -->
+            <PlanToJointState
+                name="Plan to open the gripper"
+                service_name="/plan_kinematic_path"
+                group_name="hand"
+                joint_names="finger_1_joint"
+                joint_positions="0.023"
+                tolerance="0.0001"
+                trajectory="{gripper_traj}"/>
+
+            <ExecuteTrajectory
+                name="Open the gripper "
+                trajectory="{gripper_traj}"
+                action_name="/execute_trajectory"/>
+        </Sequence>
+    </BehaviorTree>
+
+
+    <BehaviorTree ID="CloseGripper">
+        <Sequence>
+            <PlanToJointState
+                name="Plan to close the gripper"
+                service_name="/plan_kinematic_path"
+                group_name="hand"
+                joint_names="finger_1_joint"
+                joint_positions="0.001"
+                tolerance="0.0001"
+                trajectory="{gripper_traj}"/>
+
+            <ExecuteTrajectory
+                name="Close the gripper "
+                trajectory="{gripper_traj}"
+                action_name="/execute_trajectory"/>
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="GetColorBlobPose">
+        <Sequence>
+            <GetSyncedImagePointCloudDepth
+                name="Get Synced Image Point Cloud Depth"
+                point_cloud_topic_name="/wrist_mounted_camera/depth/color/points"
+                depth_image_topic_name="/wrist_mounted_camera/aligned_depth_to_color/image_raw"
+                rgb_camera_info="{rgb_camera_info}"
+                rgb_camera_info_topic_name="/wrist_mounted_camera/color/camera_info"
+                rgb_image_topic_name="/wrist_mounted_camera/color/image_raw"
+            />
+
+             <DetectColorBlobs
+                name="DetectColorBlobs"
+                blob_color="red"
+                blob_pose="{blob_pose}"
+                camera_info="{rgb_camera_info}"
+                depth_image="{depth_image}"
+                mask_image="{masked_blob_image}"
+                min_blob_size="5.0"
+                rgb_image="{rgb_image}"
+            />
+
+        </Sequence>
+    </BehaviorTree>
+
+</root>
