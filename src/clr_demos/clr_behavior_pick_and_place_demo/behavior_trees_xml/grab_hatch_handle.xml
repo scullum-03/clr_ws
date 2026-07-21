@@ -1,29 +1,38 @@
 <root BTCPP_format="4"
-    main_tree_to_execute="GrabHatchHandle">
+    main_tree_to_execute="GrabHatchHandleR">
 
-    <BehaviorTree ID="GrabHatchHandle">
+    <BehaviorTree ID="GrabHatchHandleR">
         <Sequence>
            
-            <!-- <SubTree ID="TraverseRight"/> -->
+            <SubTree ID="TraverseRight"/>
 
-            <SubTree ID="ApproachHatchHandle"/>
+            <SubTree ID="ApproachHatchHandleR"/>
 
-            <SubTree ID="DetectHatchHandle"/>
+            <SubTree ID="DetectHatchHandle" target_part="lorge/external_2_grab_handle" />
 
-            <SubTree ID="GraspHatchHandle"/>
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="GrabHatchHandleC">
+        <Sequence>
+           
+            <SubTree ID="TraverseRight"/>
+
+            <SubTree ID="ApproachHatchHandleC"/>
+
+            <SubTree ID="DetectHatchHandle" target_part="lorge/external_1_grab_handle"/>
 
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="TraverseRight">
         <Sequence>  
-                
             <PlanToJointState
-                name="Plan to joint state"
+                name="traversing right"
                 service_name="/plan_kinematic_path"
-                group_name="rail"
-                joint_names="vention_rail_base_to_carriage"
-                joint_positions="1.750"
+                group_name= "clr"
+                joint_names="vention_rail_base_to_carriage;ewellix_lift_lower_to_higher;shoulder_pan_joint;shoulder_lift_joint;elbow_joint;wrist_1_joint;wrist_2_joint;wrist_3_joint"
+                joint_positions="1.2;0.473;3.14159;-2.05949;-2.49582;0.20944;-0.0349066;-1.93732"
                 tolerance="0.0001"
                 trajectory="{gripper_traj}"/>
 
@@ -35,11 +44,73 @@
         </Sequence>
     </BehaviorTree>
 
-    <BehaviorTree ID="ApproachHatchHandle">
+    <BehaviorTree ID="ApproachHatchHandleL">
         <Sequence>  
             <CreateRandomTransform
-                name="Create approach hatch handle transform"
-                transform_name="approach_hatch_handle_transform"
+                name="Create approach hatch handle (left) transform"
+                transform_name="approach_hatch_handle_left_transform"
+                center="1.7993;0.33935;1.3665"
+                box_side="0.0;0.0;0.0"
+                transform="{transform}"/>
+
+            <ApplyTransform name="Rotate the transform"
+                input_transform="{transform}"
+                applied_transform_translation="0.0;0.0;0.0"
+                applied_transform_rotation="0.0;0.707;-0.0;0.707"
+                resulting_transform="{transform}"
+                />
+
+            <PublishTransform
+                name="publish transform"
+                input_transform="{transform}"
+                />
+
+            <SubTree ID="rrt_to_transform"
+                transform="{transform}"
+                group_name="clr"
+                end_effector_name="grasp_frame"
+                velocity_scaling="1.0"
+                acceleration_scaling="1.0"
+                />
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="ApproachHatchHandleR">
+        <Sequence>  
+            <CreateRandomTransform
+                name="Create approach hatch handle (right) transform"
+                transform_name="approach_hatch_handle_right_transform"
+                center="1.9118;-0.558545;1.3595"
+                box_side="0.0;0.0;0.0"
+                transform="{transform}"/>
+
+            <ApplyTransform name="Rotate the transform"
+                input_transform="{transform}"
+                applied_transform_translation="0.0;0.0;0.0"
+                applied_transform_rotation="0.0;0.707;-0.0;0.707"
+                resulting_transform="{transform}"
+                />
+
+            <PublishTransform
+                name="publish transform"
+                input_transform="{transform}"
+                />
+
+            <SubTree ID="rrt_to_transform"
+                transform="{transform}"
+                group_name="clr"
+                end_effector_name="grasp_frame"
+                velocity_scaling="1.0"
+                acceleration_scaling="1.0"
+                />
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="ApproachHatchHandleC">
+        <Sequence>  
+            <CreateRandomTransform
+                name="Create approach hatch handle (center) transform"
+                transform_name="approach_hatch_handle_center_transform"
                 center="1.4991;-0.558316;1.3595"
                 box_side="0.0;0.0;0.0"
                 transform="{transform}"/>
@@ -74,13 +145,11 @@
             <!--Gets color blob frame-->
             <SubTree ID="GetColorBlobPose" blob_pose="{blob_pose}" />
 
-            <!-- GetColoBlobPose returns PoseStamped and we need TransformStamped -->
             <PoseToTransform name="Blob pose to transform"
                 pose_stamped="{blob_pose}"
                 transform_stamped="{transform}"
                 />
 
-            <!-- MoveIt planning works **A LOT** better with world transform, this is a bit of a cheat -->
             <PublishTransform
                 name="publish transform"
                 new_transform_name="found_blob_pose"
@@ -94,43 +163,37 @@
                 tf="{transform}"
                 />
 
-                <!-- <AsyncTfLookup name="Look up hatch handle offset"
-                    base_frame="lorge/external_2_grab_touch"
-                    target_frame="hatch_handle_offset"
-                    tf="{transform}"
-                />
-
-                <ApplyTransform name="Rotate the transform"
-                    input_transform="{transform}"
-                    applied_transform_translation="0.0;0.0;0.0"
-                    applied_transform_rotation="0.707;-0.0;-0.707;0.0"
-                    resulting_transform="{transform}"
-                /> -->
+            <!--offsets found blob pose-->
+            <ApplyTransform name="Rotate the transform"
+                input_transform="{transform}"
+                applied_transform_translation="0.0;0.0;-0.1"
+                applied_transform_rotation="0.2181662;0.0;0.0;0.0"
+                resulting_transform="{transform}"
+            />
 
             <PublishTransform
                 name="publish transform"
                 input_transform="{transform}"
                 />
+                
+            <SubTree ID="DescendHatchHandle" target_part="{target_part}" _autoremap="true"/>
+            <!-- <SubTree ID="DescendHatchHandle" target_part="lorge/external_2_grab_handle" _autoremap="true"/> -->
 
-            <SubTree ID="rrt_to_transform"
-                transform="{transform}"
-                group_name="clr"
-                end_effector_name="grasp_frame"
-                velocity_scaling="1.0"
-                acceleration_scaling="1.0"
-                />
-<!-- 
-            <CreateRandomTransform
-                name="Create descend hatch handle transform"
-                transform_name="descend_hatch_handle_transform"
-                center="1.6991;-0.55837;1.3595"
-                box_side="0.0;0.0;0.0"
-                transform="{transform}"/>
+        </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="DescendHatchHandle">
+        <Sequence>  
+            <AsyncTfLookup name="Look up found blob pose"
+                    base_frame="world"
+                    target_frame="found_blob_pose"
+                    tf="{transform}"
+                    />
 
             <ApplyTransform name="Rotate the transform"
                 input_transform="{transform}"
-                applied_transform_translation="0.0;0.0;0.0"
-                applied_transform_rotation="0.707;-0.0;-0.707;0.0"
+                applied_transform_translation="0.0;0.0;0.15"
+                applied_transform_rotation="0.0;-0.0;0.0;0.0"
                 resulting_transform="{transform}"
                 />
 
@@ -139,40 +202,14 @@
                 new_transform_name="descend_hatch_handle"
                 input_transform="{transform}"
                 />
+            <!-- "true" means disabling collisions (i.e., allowing touch) -->
+            <SubTree ID="ToggleCollisionSubTree" 
+                     allow_collision="true" 
+                     target_part="{target_part}" 
+                    _autoremap="true" />
 
             <SubTree ID="rrt_to_transform"
                 transform="{transform}"
-                group_name="clr"
-                end_effector_name="grasp_frame"
-                velocity_scaling="1.0"
-                acceleration_scaling="1.0" -->
-                <!-- /> -->
-        </Sequence>
-    </BehaviorTree>
-
-
-    <BehaviorTree ID="GraspHatchHandle">
-        <Sequence>  
-            <AsyncTfLookup name="Look up grasp hatch handle (grasp_frame_2)"
-                    base_frame="lorge/external_2_grab_touch"
-                    target_frame="grasp_frame_2"
-                    tf="{goal_transform_stamped}"
-                    />
-
-            <ApplyTransform name="Rotate the transform"
-                input_transform="{goal_transform_stamped}"
-                applied_transform_translation="-0.01;0.0;0.0"
-                applied_transform_rotation="0.707;-0.0;-0.707;0.0"
-                resulting_transform="{goal_transform_stamped}"
-                />
-
-            <PublishTransform
-                name="publish transform"
-                input_transform="{goal_transform_stamped}"
-                />
-
-            <SubTree ID="rrt_to_transform"
-                transform="{goal_transform_stamped}"
                 group_name="clr"
                 end_effector_name="grasp_frame"
                 velocity_scaling="1.0"
@@ -181,12 +218,21 @@
 
             <SubTree ID="CloseGripper"/>
 
+            <!-- "false" means re-enabling collisions (i.e., disallowing touch)
+            <SubTree ID="ToggleCollisionSubTree" 
+                     allow_collision="false" 
+                     target_part="{target_part}"
+                     /> -->
         </Sequence>
+    </BehaviorTree>
+
+    <BehaviorTree ID="ToggleCollisionSubTree">
+        <!-- Runs the underlying C++ Action Node -->
+        <ToggleCollision allow_collision="{allow_collision}" target_part="{target_part}"/>
     </BehaviorTree>
 
     <BehaviorTree ID="OpenGripper">
         <Sequence>
-            <!-- Make sure that the gripper is open -->
             <PlanToJointState
                 name="Plan to open the gripper"
                 service_name="/plan_kinematic_path"
@@ -202,7 +248,7 @@
                 action_name="/execute_trajectory"/>
         </Sequence>
     </BehaviorTree>
-
+    
 
     <BehaviorTree ID="CloseGripper">
         <Sequence>
@@ -211,12 +257,12 @@
                 service_name="/plan_kinematic_path"
                 group_name="hand"
                 joint_names="finger_1_joint"
-                joint_positions="0.001"
+                joint_positions="0.000"
                 tolerance="0.0001"
                 trajectory="{gripper_traj}"/>
 
             <ExecuteTrajectory
-                name="Close the gripper "
+                name="Close the gripper"
                 trajectory="{gripper_traj}"
                 action_name="/execute_trajectory"/>
         </Sequence>
