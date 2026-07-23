@@ -145,23 +145,6 @@ private:
     return true;
   }
 
-//   template <typename Client, typename Request, typename Response>
-//   Response request_response(Client client, Request request)
-//   {
-//     // Sends the asynchronous request
-//     auto future = client->async_send_request(request);
-    
-//     // yields control to the ROS executor pool until the future is ready
-//     if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), future) == 
-//         rclcpp::FutureReturnCode::SUCCESS)
-//     {
-//       return future.get();
-//     }
-    
-//     RCLCPP_ERROR(this->get_logger(), "Failed or timed out waiting for service: %s", client->get_service_name());
-//     return Response(); // Returns default constructed message package safely
-//   }
-// };
   template <typename Client, typename Request, typename Response>
   Response request_response(Client client, Request request)
   {

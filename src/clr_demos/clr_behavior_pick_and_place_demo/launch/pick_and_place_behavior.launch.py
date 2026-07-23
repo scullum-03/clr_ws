@@ -21,8 +21,10 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
+from moveit_configs_utils import MoveItConfigsBuilder
 import os
 
 
@@ -33,6 +35,17 @@ def launch_setup(context, *args, **kwargs):
 
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare("clr_behavior_pick_and_place_demo"), "config", "clr_behaviors.rviz"]
+    )
+
+    # loads MoveIt configuration context so the clr_constrained_planner node can read the SRDF parameters
+    moveit_config = (
+        MoveItConfigsBuilder("clr", package_name="clr_moveit_config")
+        .robot_description(
+            mappings={
+                "include_mockups_in_description": include_mockups_in_description.perform(context)
+            }
+        )
+        .to_moveit_configs()
     )
 
     move_group_nodes = IncludeLaunchDescription(
@@ -51,6 +64,20 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
+    clr_constrained_planner_node = Node(
+        package="clr_behavior_pick_and_place_demo",
+        executable="clr_constrained_planner",
+        name="clr_constrained_planner",
+        output="screen",
+        parameters=[
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics,
+            moveit_config.planning_pipelines,
+            {"use_sim_time": use_sim_time},
+        ],
+    )
+
     drt_behavior_nodes = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -66,7 +93,7 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
-    return [move_group_nodes, drt_behavior_nodes]
+    return [move_group_nodes, drt_behavior_nodes, clr_constrained_planner_node]
 
 
 def generate_launch_description():

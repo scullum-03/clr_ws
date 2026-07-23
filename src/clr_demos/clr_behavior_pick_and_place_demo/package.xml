@@ -18,6 +18,7 @@
   <depend>moveit_core</depend>
   <depend>moveit_msgs</depend>
   <depend>rclcpp</depend>
+  <depend>moveit_visual_tools</depend>
 
 
 

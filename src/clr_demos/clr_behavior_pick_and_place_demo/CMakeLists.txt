@@ -23,8 +23,18 @@ foreach(pkg IN LISTS dependencies_pkgs)
     find_package(${pkg} REQUIRED)
 endforeach()
 
-add_executable(acm_modifier_node src/acm_modifier_node.cpp)
+add_executable(acm_modifier_node src/acm_modifier_node.cpp )
 ament_target_dependencies(acm_modifier_node
+    rclcpp 
+    moveit_msgs 
+    moveit_core
+    moveit_ros_planning
+    moveit_visual_tools
+    moveit_ros_planning_interface
+)
+
+add_executable(clr_constrained_planner src/clr_constrained_planner.cpp)
+ament_target_dependencies(clr_constrained_planner
     rclcpp 
     moveit_msgs 
     moveit_core
@@ -35,6 +45,7 @@ ament_target_dependencies(acm_modifier_node
 
 install(TARGETS
     acm_modifier_node
+    clr_constrained_planner
   DESTINATION lib/${PROJECT_NAME}
 )
 
